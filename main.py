@@ -43,10 +43,10 @@ def go(config: DictConfig):
             os.path.join(root_path, "preprocess"),
             "main",
             parameters={
-                "input_artifact": '',
+                "input_artifact": 'raw_data.parquet',
                 "artifact_name": "preprocessed_data",
                 "artifact_type": "cleaned_data",
-                "artifact_desceription": "Performed preprocessing data"
+                "artifact_description": "Performed preprocessing data"
             }
         )
 
@@ -68,9 +68,9 @@ def go(config: DictConfig):
             os.path.join(root_path, "segregate"),
             "main",
             parameters={
-                "input_artifact": '',
-                "artifact_root": "preprocessed_data",
-                "artifact_type": "cleaned_data",
+                "input_artifact": 'preprocessed_data',
+                "artifact_root": "segregate_process",
+                "artifact_type": "segregated_data",
                 "test_size": config['data']['test_size'],
                 "random_state": config['random_seed'],
                 "stratify": config['data']['stratify']
@@ -85,13 +85,29 @@ def go(config: DictConfig):
         with open(model_config, "w+") as fp:
             fp.write(OmegaConf.to_yaml(config["random_forest_pipeline"]))
 
-        ## YOUR CODE HERE: call the random_forest step
-        pass
+        _ = mlflow.run(
+            os.path.join(root_path, "random_forest"),
+            "main",
+            parameters={
+                "train_data": 'segregate_process',
+                "model_config": model_config,
+                "export_artifact": config['export_artifact'],
+                "random_seed": config['random_seed'],
+                "val_size": config['data']['val_size'],
+                "stratify": config['data']['stratify']
+            }
+        )    
 
     if "evaluate" in steps_to_execute:
 
-        ## YOUR CODE HERE: call the evaluate step
-        pass
+        _ = mlflow.run(
+            os.path.join(root_path, "evaluate"),
+            "main",
+            parameters={
+                "model_export": config['export_artifact'],
+                "test_data":  
+            }
+        )
 
 
 if __name__ == "__main__":
